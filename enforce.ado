@@ -673,10 +673,12 @@ void check_identities() {
 			missrhs = (rhs[i, .] :>= .)
 			
 			// First: rank of the coefficient matric of the system
-			rkcoef = rank((matidennofix[selectindex(!missrhs), .]), tol = tolerance)
+			fullsvd((matidennofix[selectindex(!missrhs), .]), U, s, V)
+			rkcoef = sum(s :>= tolerance)
 			
 			// Second: rank of the augmented matrix
-			rkaug = rank((matidennofix[selectindex(!missrhs), .], rhs[i, selectindex(!missrhs)]'), tol = tolerance)
+			fullsvd((matidennofix[selectindex(!missrhs), .], rhs[i, selectindex(!missrhs)]'), U, s, V)
+			rkaug = sum(s :>= tolerance)
 
 			// Apply the Rouche–Capelli theorem
 			if (rkaug > rkcoef) {
@@ -690,8 +692,11 @@ void check_identities() {
 				// Check that the RHS of the system belongs to its range even
 				// after removing zero-valued variables
 				matidennozero = matidennofix[selectindex(!missrhs), selectindex(!zerovars)]
-				rknozero = rank(matidennozero, tol = tolerance)
-				rknozeroaug = rank((matidennozero, rhs[i, selectindex(!missrhs)]'), tol = tolerance)
+				
+				fullsvd(matidennozero, U, s, V)
+				rknozero = sum(s :>= tolerance)
+				fullsvd((matidennozero, rhs[i, selectindex(!missrhs)]'), U, s, V)
+				rknozeroaug = sum(s :>= tolerance)
 
 				// Use the Rouche–Capelli theorem
 				if (rknozeroaug > rknozero) {

@@ -578,7 +578,11 @@ void calc_discrepancy(string scalar varlist) {
 	
 	iden = st_matrix(st_local("matiden"))[i, .]
 	
-	st_store(., st_local("discr"), st_local("touse"), abs(vars*iden'))
+	// Remove variables with a coefficient equal to zero, so that it doesn't
+	// create undue missing values
+	zerovars = (iden :== 0)
+	
+	st_store(., st_local("discr"), st_local("touse"), abs(vars[., selectindex(!zerovars)]*iden[selectindex(!zerovars)]'))
 }
 
 void check_identities() {
@@ -804,3 +808,6 @@ void force_identities() {
 }
 
 end
+
+
+

@@ -480,15 +480,12 @@ program enforce
 			
 			di as text "{ralign 60: pre-adjustment absolute discrepancies} {c |} ",, _continue
 			
-			tempname uniqvarsmat eqmat discrvec
-			mkmat `uniqvars', matrix(`uniqvarsmat')
-			matrix `eqmat' = `matiden'[`i', 1...]
-			matrix `discrvec' = `uniqvarsmat'*`eqmat''
 			tempvar discr
-			svmat `discrvec', names(`discr')
-			qui replace `discr'1 = abs(`discr'1)
-			qui summarize `discr'1 if `touse'
-			drop `discr'1
+			qui generate `discr' = .
+			mata: calc_discrepancy(st_local("uniqvars"))
+			qui summarize `discr' if `touse'
+			drop `discr'
+			
 			di as text "{space 3}" as result %9.3g = r(mean),, _continue
 			di as text "{space 3}" as result %9.3g = r(sd),, _continue
 			di as text "{space 3}" as result %9.3g = r(min),, _continue
@@ -496,15 +493,12 @@ program enforce
 			
 			di as text "{ralign 60: post-adjustment absolute discrepancies} {c |} ",, _continue
 			
-			tempname uniqvarsmat eqmat discrvec
-			mkmat `tmpuniqvars', matrix(`uniqvarsmat')
-			matrix `eqmat' = `matiden'[`i', 1...]
-			matrix `discrvec' = `uniqvarsmat'*`eqmat''
 			tempvar discr
-			svmat `discrvec', names(`discr')
-			qui replace `discr'1 = abs(`discr'1)
-			qui summarize `discr'1 if `touse'
-			drop `discr'1
+			qui generate `discr' = .
+			mata: calc_discrepancy(st_local("tmpuniqvars"))
+			qui summarize `discr' if `touse'
+			drop `discr'
+			
 			di as text "{space 3}" as result %9.3g = r(mean),, _continue
 			di as text "{space 3}" as result %9.3g = r(sd),, _continue
 			di as text "{space 3}" as result %9.3g = r(min),, _continue
@@ -576,6 +570,16 @@ program enforce
 end
 
 mata:
+
+void calc_discrepancy(string scalar varlist) {
+	i = strtoreal(st_local("i"))
+	
+	st_view(vars, ., varlist, st_local("touse"))
+	
+	iden = st_matrix(st_local("matiden"))[i, .]
+	
+	st_store(., st_local("discr"), st_local("touse"), abs(vars*iden'))
+}
 
 void check_identities() {
 	tolerance = strtoreal(st_local("tolerance"))
@@ -795,6 +799,3 @@ void force_identities() {
 }
 
 end
-
-
-

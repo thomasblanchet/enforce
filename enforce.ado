@@ -438,7 +438,7 @@ program enforce
 		foreach v of varlist `tmpuniqvars' {
 			tempvar miss`v' zero`v'
 			qui generate `miss`v'' = missing(`v') if `touse'
-			qui generate `zero`v'' = (`v' == 0)   if `touse'
+			qui generate `zero`v'' = (abs(`v') <= `tolerance') if `touse'
 			local missvars `missvars' `miss`v''
 			local zerovars `zerovars' `zero`v''
 		}
@@ -691,7 +691,7 @@ void check_identities() {
 			} else {
 				// Zero-value variables are implicitely fixed, so they can prevent
 				// the system from being solvable: we check if this is the case
-				zerovars = (vars[i, selectindex(!fixedvaridx)] :== 0)
+				zerovars = (abs(vars[i, selectindex(!fixedvaridx)]) :<= tolerance)
 
 				// Check that the RHS of the system belongs to its range even
 				// after removing zero-valued variables
@@ -713,6 +713,8 @@ void check_identities() {
 }
 
 void fill_missing() {
+	tolerance = strtoreal(st_local("tolerance"))
+	
 	// Identities in matrix form
 	matiden = st_matrix(st_local("matiden"))
 	
@@ -737,15 +739,15 @@ void fill_missing() {
 	
 	// Use singular value decomposition (ie. generalized Moore-Penrose inverse)
 	// to deal with overdetermined systems
-	X = svsolve(A, B, rank)
-	if (rank < cols(A)) {
-		// System underdetermined, nothing can be done
-		// (svsolve solution has no good meaning for this problem)
-		return
-	}
+	X = svsolve(A, B, rkcoef, tol = tolerance)
 	
-	// Store the solution
-	vars[., selectindex(missstruct)] = X'
+	// Use Rouche-Capelli theorem (second part, since we know a solution has
+	// to exists frm the checks)
+	if (rkcoef == cols(A)) {
+		// System has a unique solution, we use it
+		vars[., selectindex(missstruct)] = X'
+	}
+	// Otherwise system is underdetermined, nothing can be done
 }
 
 void force_identities() {

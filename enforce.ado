@@ -742,7 +742,7 @@ void fill_missing() {
 	// Find a generalized solution of the system: the use of generalized
 	// solution allows us to get a reasonable solution even if the system
 	// isn't yet consistent
-	X = svsolve(A, B, rkcoef, tol = -tolerance)
+	X = svsolve(A, B, rank, tol = -tolerance)
 	_edittozero(X, 1000)
 	
 	// Look at the nullspace of the matrix to see which variables may be
@@ -750,17 +750,24 @@ void fill_missing() {
 	fullsvd(A, U, s, V)
 	_transpose(V)
 	rank = sum(s :>= tolerance)
-	nullspace = V[., (rank + 1)::cols(V)]
-	
 	missvaridx = selectindex(missstruct)
-	for (i = 1; i <= cols(A); i++) {
-		// For fully determined variables, all coefficients of the basis of
-		// the nullspace are zero
-		if (all(abs(nullspace[i, .]) :<= tolerance)) {
-			vars[., missvaridx[i]] = X[i, 1]
+	
+	if (rank == cols(A)) {
+		// System is perfectly determined, we fill all variables
+		vars[., missvaridx] = X'
+	} else {
+		// System is undetermined, but some variables might be determined,
+		// and for that we must check the nullspace
+		nullspace = V[., (rank + 1)::cols(V)]
+		for (i = 1; i <= cols(A); i++) {
+			// For fully determined variables, all coefficients of the basis of
+			// the nullspace are zero
+			if (all(abs(nullspace[i, .]) :<= tolerance)) {
+				vars[., missvaridx[i]] = X[i, .]'
+			}
 		}
 	}
-}
+}	
 
 void force_identities() {
 	tolerance = strtoreal(st_local("tolerance"))
@@ -824,6 +831,3 @@ void force_identities() {
 }
 
 end
-
-
-

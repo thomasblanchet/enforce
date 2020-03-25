@@ -553,12 +553,12 @@ program enforce
 	
 	if ("`suffix'" != "") {
 		foreach v of local uniqvars {
-			qui generate `v'`suffix' = `tmp`v''
+			qui generate `v'`suffix' = `tmp`v'', after(`v')
 		}
 	}
 	else if ("`prefix'" != "") {
 		foreach v of local uniqvars {
-			qui generate `prefix'`v' = `tmp`v''
+			qui generate `prefix'`v' = `tmp`v'', after(`v')
 		}
 	}
 	else if ("`replace'" != "") {
@@ -593,6 +593,7 @@ void check_identities() {
 
 	// Variable names
 	varnames = st_matrixcolstripe(st_local("matiden"))[., 2]
+	
 	
 	// First, look at the system ignoring wether variables are fixed or not
 
@@ -725,6 +726,7 @@ void fill_missing() {
 	st_view(missvars, ., st_local("missvars"), st_local("gind"))
 	missstruct = missvars[1, .] // They are all the same, just need the first line
 	
+	// Ignore trivial cases
 	if (all(missstruct :== 0)) {
 		// Nothing missing, nothing to be done
 		return
@@ -737,20 +739,32 @@ void fill_missing() {
 	A = matiden[., selectindex(missstruct)]
 	B = -matiden[., selectindex(!missstruct)]*vars[., selectindex(!missstruct)]'
 	
-	// Use singular value decomposition (ie. generalized Moore-Penrose inverse)
-	// to deal with overdetermined systems
-	X = svsolve(A, B, rkcoef, tol = tolerance)
+	// Find a generalized solution of the system: the use of generalized
+	// solution allows us to get a reasonable solution even if the system
+	// isn't yet consistent
+	X = svsolve(A, B, rkcoef, tol = -tolerance)
+	_edittozero(X, 1000)
 	
-	// Use Rouche-Capelli theorem (second part, since we know a solution has
-	// to exists frm the checks)
-	if (rkcoef == cols(A)) {
-		// System has a unique solution, we use it
-		vars[., selectindex(missstruct)] = X'
+	// Look at the nullspace of the matrix to see which variables may be
+	// fully determined
+	fullsvd(A, U, s, V)
+	_transpose(V)
+	rank = sum(s :>= tolerance)
+	nullspace = V[., (rank + 1)::cols(V)]
+	
+	missvaridx = selectindex(missstruct)
+	for (i = 1; i <= cols(A); i++) {
+		// For fully determined variables, all coefficients of the basis of
+		// the nullspace are zero
+		if (all(abs(nullspace[i, .]) :<= tolerance)) {
+			vars[., missvaridx[i]] = X[i, 1]
+		}
 	}
-	// Otherwise system is underdetermined, nothing can be done
 }
 
 void force_identities() {
+	tolerance = strtoreal(st_local("tolerance"))
+	
 	// Identities in matrix form
 	matiden = st_matrix(st_local("matiden"))
 	
@@ -803,9 +817,9 @@ void force_identities() {
 		b = (c \ rhs[, i])
 
 		// Solve
-		rank = _svsolve(A, b)
+		rank = _svsolve(A, b, tol = -tolerance)
 
-		vars[i, selectindex(grpnfix)] = b[1::cols(Q), 1]'
+		vars[i, selectindex(grpnfix)] = edittozero(b[1::cols(Q), 1]', 1000)
 	}
 }
 

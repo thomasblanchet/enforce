@@ -14,7 +14,7 @@ program enforce
 	}
 	
 	syntax anything [if] [in], [FIXedvars(varlist) NOFILLmissing NOENForce ///
-		NOCHeck REPlace SUFfix(string) PREfix(string) TOLerance(real 1e-7) DIAGnostic force]
+		NOCHeck REPlace SUFfix(string) PREfix(string) TOLerance(real 1) zero(real 1e-7) DIAGnostic force]
 	marksample touse
 	
 	// ---------------------------------------------------------------------- //
@@ -438,7 +438,7 @@ program enforce
 		foreach v of varlist `tmpuniqvars' {
 			tempvar miss`v' zero`v'
 			qui generate `miss`v'' = missing(`v') if `touse'
-			qui generate `zero`v'' = (abs(`v') <= `tolerance') if `touse'
+			qui generate `zero`v'' = (abs(`v') <= `zero') if `touse'
 			local missvars `missvars' `miss`v''
 			local zerovars `zerovars' `zero`v''
 		}
@@ -475,7 +475,7 @@ program enforce
 		
 		local i = 1
 		while ("`idenexpr`i''" != "") {
-			local s = abbrev("`idenexpr`i''", 59)
+			local s = substr("`idenexpr`i''", 1, 59)
 			di "{lalign 60: {bf:`s'}} {c |}"
 			
 			di as text "{ralign 60: pre-adjustment absolute discrepancies} {c |} ",, _continue
@@ -600,7 +600,7 @@ void check_identities() {
 	// Full SVD decomposition to analyse the system and get the nullspace
 	fullsvd(matiden, U, s, V)
 	_transpose(V)
-	rank = sum(s :> tolerance)
+	rank = rank_from_singular_values(s, tol = tolerance)
 	if (rank < cols(matiden)) {
 		nullspace = V[., (rank + 1)::cols(matiden)]
 	} else {
@@ -618,15 +618,16 @@ void check_identities() {
 		// System is rank-deficient, so there is some moving parts, but some
 		// variables might still be fixed. Look at the nullspace of the
 		// matrix to see if this is the case
+		tol = 1000*cols(V)*epsilon(1)*tolerance
 		for (i = 1; i <= cols(matiden); i++) {
-			if (all(abs(nullspace[i, .]) :< tolerance)) {
+			if (all(abs(nullspace[i, .]) :<= tol)) {
 				display("{txt}warning: the identities imply {bf:" + varnames[i, 1] + " = 0}")
 			}
 			for (j = i + 1; j <= cols(matiden); j++) {
-				if (all(abs(nullspace[i, .] :- nullspace[j, .]) :< tolerance)) {
+				if (all(abs(nullspace[i, .] :- nullspace[j, .]) :<= tol)) {
 					display("{txt}warning: the identities imply {bf:" + varnames[i, 1] + " = " + varnames[j, 1] + "}")
 				}
-				if (all(abs(nullspace[i, .] :+ nullspace[j, .]) :< tolerance)) {
+				if (all(abs(nullspace[i, .] :+ nullspace[j, .]) :<= tol)) {
 					display("{txt}warning: the identities imply {bf:" + varnames[i, 1] + " = -" + varnames[j, 1] + "}")
 				}
 			}
@@ -642,7 +643,7 @@ void check_identities() {
 
 		fullsvd(matidennofix, U, s, V)
 		_transpose(V)
-		rank = sum(s :> tolerance)
+		rank = rank_from_singular_values(s, tol = tolerance)
 		// Store the range of the system for later
 		nofixrange = U[., 1::rank]
 		
@@ -653,8 +654,9 @@ void check_identities() {
 			// after fixing fixed variables, but some variables may still
 			// be perfectly determined
 			nullspace = V[., (rank + 1)::cols(matidennofix)]
+			tol = 1000*cols(V)*epsilon(1)*tolerance
 			for (i = 1; i <= cols(matidennofix); i++) {
-				if (all(abs(nullspace[i, .]) :< tolerance)) {
+				if (all(abs(nullspace[i, .]) :<= tol)) {
 					display("{txt}warning: the identities imply that {bf:" + nofixvarnames[i, 1] + ///
 						"} is perfectly determined by the fixed variables; its initial value will be irrelevant")
 				}
@@ -677,13 +679,13 @@ void check_identities() {
 			// Remove constraints with a missing RHS
 			missrhs = (rhs[i, .] :>= .)
 			
-			// First: rank of the coefficient matric of the system
+			// First: rank of the coefficient matrix of the system
 			fullsvd((matidennofix[selectindex(!missrhs), .]), U, s, V)
-			rkcoef = sum(s :>= tolerance)
+			rkcoef = rank_from_singular_values(s, tol = tolerance)
 			
 			// Second: rank of the augmented matrix
 			fullsvd((matidennofix[selectindex(!missrhs), .], rhs[i, selectindex(!missrhs)]'), U, s, V)
-			rkaug = sum(s :>= tolerance)
+			rkaug = rank_from_singular_values(s, tol = tolerance)
 
 			// Apply the Rouche–Capelli theorem
 			if (rkaug > rkcoef) {
@@ -692,16 +694,16 @@ void check_identities() {
 			} else {
 				// Zero-value variables are implicitely fixed, so they can prevent
 				// the system from being solvable: we check if this is the case
-				zerovars = (abs(vars[i, selectindex(!fixedvaridx)]) :<= tolerance)
+				zerovars = (abs(vars[i, selectindex(!fixedvaridx)]) :<= strtoreal(st_local("zero")))
 
 				// Check that the RHS of the system belongs to its range even
 				// after removing zero-valued variables
 				matidennozero = matidennofix[selectindex(!missrhs), selectindex(!zerovars)]
 				
 				fullsvd(matidennozero, U, s, V)
-				rknozero = sum(s :>= tolerance)
+				rknozero = rank_from_singular_values(s, tol = tolerance)
 				fullsvd((matidennozero, rhs[i, selectindex(!missrhs)]'), U, s, V)
-				rknozeroaug = sum(s :>= tolerance)
+				rknozeroaug = rank_from_singular_values(s, tol = tolerance)
 
 				// Use the Rouche–Capelli theorem
 				if (rknozeroaug > rknozero) {
@@ -742,14 +744,13 @@ void fill_missing() {
 	// Find a generalized solution of the system: the use of generalized
 	// solution allows us to get a reasonable solution even if the system
 	// isn't yet consistent
-	X = svsolve(A, B, rank, tol = -tolerance)
-	_edittozero(X, 1000)
+	X = svsolve(A, B, rank, tol = tolerance)
 	
 	// Look at the nullspace of the matrix to see which variables may be
 	// fully determined
 	fullsvd(A, U, s, V)
 	_transpose(V)
-	rank = sum(s :>= tolerance)
+	rank = rank_from_singular_values(s, tol = tolerance)
 	missvaridx = selectindex(missstruct)
 	
 	if (rank == cols(A)) {
@@ -759,39 +760,40 @@ void fill_missing() {
 		// System is undetermined, but some variables might be determined,
 		// and for that we must check the nullspace
 		nullspace = V[., (rank + 1)::cols(V)]
+		tol = 1000*cols(V)*epsilon(1)*tolerance
 		for (i = 1; i <= cols(A); i++) {
 			// For fully determined variables, all coefficients of the basis of
 			// the nullspace are zero
-			if (all(abs(nullspace[i, .]) :<= tolerance)) {
+			if (all(abs(nullspace[i, .]) :<= tol)) {
 				vars[., missvaridx[i]] = X[i, .]'
 			}
 		}
 	}
-}	
+}
 
 void force_identities() {
 	tolerance = strtoreal(st_local("tolerance"))
-	
+
 	// Identities in matrix form
 	matiden = st_matrix(st_local("matiden"))
-	
+
 	// Variable names
 	varnames = st_matrixcolstripe(st_local("matiden"))[., 2]
-	
+
 	// Fixed variables of the system
 	fixedvaridx = st_matrix(st_local("fixedvaridx"))
-	
+
 	// View to all the variables of the problem
 	st_view(vars, ., st_local("tmpuniqvars"), st_local("gind"))
-	
+
 	// View to the variable with the missing strcuture of the data
 	st_view(missvars, ., st_local("missvars"), st_local("gind"))
 	missstruct = missvars[1, .] // They are all the same, just need the first line
-	
+
 	// View to the variable with the zero strcuture of the data
 	st_view(zerovars, ., st_local("zerovars"), st_local("gind"))
 	zerostruct = zerovars[1, .] // They are all the same, just need the first line
-	
+
 	// Drop constraints that involve missing variables
 	matidengrp = matiden[selectindex(missstruct*abs(matiden)' :== 0), .]
 	if (rows(matidengrp) == 0) {
@@ -822,11 +824,11 @@ void force_identities() {
 		// Build the system to be solved
 		A = (Q, lhs' \ lhs, J(rows(lhs), rows(lhs), 0))
 		b = (c \ rhs[, i])
-
+				
 		// Solve
-		rank = _svsolve(A, b, tol = -tolerance)
+		rank = _qrsolve(A, b, tol = tolerance)
 
-		vars[i, selectindex(grpnfix)] = edittozero(b[1::cols(Q), 1]', 1000)
+		vars[i, selectindex(grpnfix)] = b[1::cols(Q), 1]'
 	}
 }
 

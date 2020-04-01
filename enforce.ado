@@ -800,10 +800,10 @@ void force_identities() {
     fullsvd(nullspace, U, s, V)
     rank = rank_from_singular_values(s, tol = tolerance)
     if (rank == cols(U)) {
-        // No enforcable constraints
+        // No enforcable constraints (all variables linearly independent)
         return
     }
-    // Get group-specific constraints
+    // Get group-specific constraints (left null space = orthogonal complement of the range)
     matidengrp = U[., (rank + 1)::cols(U)]'
 
     // Fixed and moving within all vars
@@ -821,9 +821,13 @@ void force_identities() {
     // Enforce the constraints
     for (i = 1; i <= rows(vars); i++) {
         // Matrix of quadratic coefficients
-        Q = diag(1 :/ abs(vars[i, selectindex(varnfix)]))
+        quadcoefs = 1 :/ abs(vars[i, selectindex(varnfix)])
+        // Ensure reasonable conditioning
+        meancoef = mean(quadcoefs')
+        Q = diag(quadcoefs/meancoef)
+
         // Vector of linear coefficients
-        c = sign(vars[i, selectindex(varnfix)])'
+        c = sign(vars[i, selectindex(varnfix)])'/meancoef
 
         // Build the system to be solved
         A = (Q, lhs' \ lhs, J(rows(lhs), rows(lhs), 0))

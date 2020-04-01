@@ -743,14 +743,14 @@ void fill_missing() {
     // solution allows us to get a reasonable solution even if the system
     // isn't yet consistent
     X = svsolve(A, B, rank, tol = tolerance)
-	
+
     // Look at the nullspace of the matrix to see which variables may be
     // fully determined
     fullsvd(A, U, s, V)
     _transpose(V)
     rank = rank_from_singular_values(s, tol = tolerance)
     missvaridx = selectindex(missstruct)
-		
+
     if (rank == cols(A)) {
         // System is perfectly determined, we fill all variables
         vars[., missvaridx] = X'
@@ -791,29 +791,29 @@ void force_identities() {
     // View to the variable with the zero strcuture of the data
     st_view(zerovars, ., st_local("zerovars"), st_local("gind"))
     zerostruct = zerovars[1, .] // They are all the same, just need the first line
-	
-	// Construct a system of equality that only involves nonmissing variables
-	fullsvd(matiden, U, s, V)
-	_transpose(V)
-	rank = rank_from_singular_values(s, tol = tolerance)
-	nullspace = V[selectindex(!missstruct), (rank + 1)::cols(V)]
-	fullsvd(nullspace, U, s, V)
-	rank = rank_from_singular_values(s, tol = tolerance)
-	if (rank == cols(U)) {
-		// No enforcable constraints
-		return
-	}
-	// Get group-specific constraints
-	matidengrp = U[., (rank + 1)::cols(U)]'
-	
-	// Fixed and moving within all vars
-	varfix = (fixedvaridx :| zerostruct) :& !missstruct
-	varnfix = (!fixedvaridx :& !zerostruct) :& !missstruct
-	
-	// Fixed and moving variables within nonmissings
-	grpfix = fixedvaridx[1, selectindex(!missstruct)] :| zerostruct[1, selectindex(!missstruct)]
-	grpnfix = !fixedvaridx[1, selectindex(!missstruct)] :& !zerostruct[1, selectindex(!missstruct)]
-	
+
+    // Construct a system of equality that only involves nonmissing variables
+    fullsvd(matiden, U, s, V)
+    _transpose(V)
+    rank = rank_from_singular_values(s, tol = tolerance)
+    nullspace = V[selectindex(!missstruct), (rank + 1)::cols(V)]
+    fullsvd(nullspace, U, s, V)
+    rank = rank_from_singular_values(s, tol = tolerance)
+    if (rank == cols(U)) {
+        // No enforcable constraints
+        return
+    }
+    // Get group-specific constraints
+    matidengrp = U[., (rank + 1)::cols(U)]'
+
+    // Fixed and moving within all vars
+    varfix = (fixedvaridx :| zerostruct) :& !missstruct
+    varnfix = (!fixedvaridx :& !zerostruct) :& !missstruct
+
+    // Fixed and moving variables within nonmissings
+    grpfix = fixedvaridx[1, selectindex(!missstruct)] :| zerostruct[1, selectindex(!missstruct)]
+    grpnfix = !fixedvaridx[1, selectindex(!missstruct)] :& !zerostruct[1, selectindex(!missstruct)]
+
     // Estimate the LHS and the RHS of the equality constraints
     lhs = matidengrp[., selectindex(grpnfix)]
     rhs = -matidengrp[., selectindex(grpfix)]*vars[, selectindex(varfix)]'
@@ -828,10 +828,10 @@ void force_identities() {
         // Build the system to be solved
         A = (Q, lhs' \ lhs, J(rows(lhs), rows(lhs), 0))
         b = (c \ rhs[, i])
-		
+
         // Solve
         rank = _qrsolve(A, b, tol = tolerance)
-		
+
         vars[i, selectindex(varnfix)] = b[1::cols(Q), 1]'
     }
 }

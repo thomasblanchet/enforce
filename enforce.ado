@@ -594,7 +594,6 @@ void check_identities() {
     // Variable names
     varnames = st_matrixcolstripe(st_local("matiden"))[., 2]
 
-
     // First, look at the system ignoring wether variables are fixed or not
 
     // Full SVD decomposition to analyse the system and get the nullspace
@@ -609,7 +608,6 @@ void check_identities() {
 
     // Store nullspace for fixed variables for later
     fixedvaridx = st_matrix(st_local("fixedvaridx"))
-    nsfix = nullspace[selectindex(fixedvaridx), .]
 
     if (rank == cols(matiden)) {
         // System has full rank
@@ -680,7 +678,7 @@ void check_identities() {
             missrhs = (rhs[i, .] :>= .)
 
             // First: rank of the coefficient matrix of the system
-            fullsvd((matidennofix[selectindex(!missrhs), .]), U, s, V)
+            fullsvd(matidennofix[selectindex(!missrhs), .], U, s, V)
             rkcoef = rank_from_singular_values(s, tol = tolerance)
 
             // Second: rank of the augmented matrix
@@ -745,14 +743,14 @@ void fill_missing() {
     // solution allows us to get a reasonable solution even if the system
     // isn't yet consistent
     X = svsolve(A, B, rank, tol = tolerance)
-
+	
     // Look at the nullspace of the matrix to see which variables may be
     // fully determined
     fullsvd(A, U, s, V)
     _transpose(V)
     rank = rank_from_singular_values(s, tol = tolerance)
     missvaridx = selectindex(missstruct)
-
+		
     if (rank == cols(A)) {
         // System is perfectly determined, we fill all variables
         vars[., missvaridx] = X'
@@ -793,42 +791,48 @@ void force_identities() {
     // View to the variable with the zero strcuture of the data
     st_view(zerovars, ., st_local("zerovars"), st_local("gind"))
     zerostruct = zerovars[1, .] // They are all the same, just need the first line
-
-    // Drop constraints that involve missing variables
-    matidengrp = matiden[selectindex(missstruct*abs(matiden)' :== 0), .]
-    if (rows(matidengrp) == 0) {
-        // No enforcable constraint
-        return
-    }
-
-    // Also drop missing and zero-valued variables to get the group-specific
-    // constraints
-    grpfix = (fixedvaridx :& !missstruct :& !zerostruct)
-    grpnfix = (!fixedvaridx :& !missstruct :& !zerostruct)
-    if (all(grpnfix :== 0)) {
-        // No variables to adjust left
-        return
-    }
-
+	
+	// Construct a system of equality that only involves nonmissing variables
+	fullsvd(matiden, U, s, V)
+	_transpose(V)
+	rank = rank_from_singular_values(s, tol = tolerance)
+	nullspace = V[selectindex(!missstruct), (rank + 1)::cols(V)]
+	fullsvd(nullspace, U, s, V)
+	rank = rank_from_singular_values(s, tol = tolerance)
+	if (rank == cols(U)) {
+		// No enforcable constraints
+		return
+	}
+	// Get group-specific constraints
+	matidengrp = U[., (rank + 1)::cols(U)]'
+	
+	// Fixed and moving within all vars
+	varfix = (fixedvaridx :| zerostruct) :& !missstruct
+	varnfix = (!fixedvaridx :& !zerostruct) :& !missstruct
+	
+	// Fixed and moving variables within nonmissings
+	grpfix = fixedvaridx[1, selectindex(!missstruct)] :| zerostruct[1, selectindex(!missstruct)]
+	grpnfix = !fixedvaridx[1, selectindex(!missstruct)] :& !zerostruct[1, selectindex(!missstruct)]
+	
     // Estimate the LHS and the RHS of the equality constraints
     lhs = matidengrp[., selectindex(grpnfix)]
-    rhs = -matidengrp[., selectindex(grpfix)]*vars[, selectindex(grpfix)]'
+    rhs = -matidengrp[., selectindex(grpfix)]*vars[, selectindex(varfix)]'
 
     // Enforce the constraints
     for (i = 1; i <= rows(vars); i++) {
         // Matrix of quadratic coefficients
-        Q = diag(1 :/ abs(vars[i, selectindex(grpnfix)]))
+        Q = diag(1 :/ abs(vars[i, selectindex(varnfix)]))
         // Vector of linear coefficients
-        c = sign(vars[i, selectindex(grpnfix)])'
+        c = sign(vars[i, selectindex(varnfix)])'
 
         // Build the system to be solved
         A = (Q, lhs' \ lhs, J(rows(lhs), rows(lhs), 0))
         b = (c \ rhs[, i])
-
+		
         // Solve
         rank = _qrsolve(A, b, tol = tolerance)
-
-        vars[i, selectindex(grpnfix)] = b[1::cols(Q), 1]'
+		
+        vars[i, selectindex(varnfix)] = b[1::cols(Q), 1]'
     }
 }
 

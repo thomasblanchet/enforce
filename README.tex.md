@@ -38,7 +38,6 @@ But there are still other problems. First, if forces us to define a reference va
 $$
 \sum_{i=1}^n \frac{(y_i - x_i)^2}{|x_i|}
 $$
-
 subject to the accounting identities. The convex cost function $(y_i-x_i)^2$ at the numerator ensure that the differences between raw and adjusted variables are as low as possible, and that they are spread equitably across all the variables. The $|x_i|$ at the denominator ensures that adjustments are proportional to the initial value of the variable. In simple cases, this is equivalent to the procedure explained above.
 
 Assume that the set of accounting identities can be written as a linear system $AX=B$. The problem can be written in matrix form as:
@@ -48,8 +47,8 @@ $$
 where $Q=\text{diag}(1/|x_1|,\dots,1/|x_n|)$ and $C=(\text{sign}(x_1),\dots,\text{sign}(x_n))'$. This is a standard, quadratic programming problem with equality constraints and a positive definite matrix $Q$. Thus, the result is the solution of the linear system (see [Wikipedia for details](https://en.wikipedia.org/wiki/Quadratic_programming#Equality_constraints)):
 $$
 \begin{bmatrix}
-Q \\ A'
-A \\ 0
+Q & A' \\
+A & 0
 \end{bmatrix} \begin{bmatrix}
 X \\ \lambda
 \end{bmatrix} = \begin{bmatrix}

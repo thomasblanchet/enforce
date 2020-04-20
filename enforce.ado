@@ -1,3 +1,5 @@
+*! enforce v0.9000 Thomas Blanchet 07apr2020
+
 // -------------------------------------------------------------------------- //
 // Command to simultaneously enforce several accounting identities on
 // several variables
@@ -9,7 +11,7 @@ program enforce
     // Check if gtools installed
     cap which gtools
     if (_rc == 1) {
-        di as error "gtools required; run 'ssc install gtools'"
+        di as error "gtools required; run {stata ssc install gtools}"
         exit 198
     }
 

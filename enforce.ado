@@ -478,7 +478,7 @@ program enforce
         local i = 1
         while ("`idenexpr`i''" != "") {
             local s = substr("`idenexpr`i''", 1, 59)
-            di "{lalign 60: {bf:`s'}} {c |}"
+            di as text "{lalign 60: {bf:`s'}} {c |}"
 
             di as text "{ralign 60: pre-adjustment absolute discrepancies} {c |} ",, _continue
 

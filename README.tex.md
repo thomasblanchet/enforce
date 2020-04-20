@@ -41,10 +41,13 @@ $$
 subject to the accounting identities. The convex cost function $(y_i-x_i)^2$ at the numerator ensure that the differences between raw and adjusted variables are as low as possible, and that they are spread equitably across all the variables. The $|x_i|$ at the denominator ensures that adjustments are proportional to the initial value of the variable. In simple cases, this is equivalent to the procedure explained above.
 
 Assume that the set of accounting identities can be written as a linear system $AX=B$. The problem can be written in matrix form as:
+
 $$
 \text{minimize} \qquad \frac{1}{2}X' Q X + C' X \qquad \text{subject to} \qquad AX=B
 $$
-where $Q=\text{diag}(1/|x_1|,\dots,1/|x_n|)$ and $C=(\text{sign}(x_1),\dots,\text{sign}(x_n))'$. This is a standard, quadratic programming problem with equality constraints and a positive definite matrix $Q$. Thus, the result is the solution of the linear system (see [Wikipedia for details](https://en.wikipedia.org/wiki/Quadratic_programming#Equality_constraints)):
+
+where $Q=\mathrm{diag}(1/|x_1|,\dots,1/|x_n|)$ and $C=(\mathrm{sign}(x_1),\dots,\text{sign}(x_n))'$. This is a standard, quadratic programming problem with equality constraints and a positive definite matrix $Q$. Thus, the result is the solution of the linear system (see [Wikipedia for details](https://en.wikipedia.org/wiki/Quadratic_programming#Equality_constraints)):
+
 $$
 \begin{bmatrix}
 Q & A' \\
@@ -63,7 +66,7 @@ This is the main task performed by the command enforce, although it also has sev
 
 First, it takes advantage of accounting identities to fill in any missing value that can technically be calculated from nonmissing variables, even though it was initially absent from the raw data.
 
-Second, it pays specific attention to the way constraints are defined to overcome missing value problems. Indeed, assume for example that we have the constraints $a=b+c$, $\alpha=a+x$, $\beta=b+y$, $\gamma=c+z$, and $x=y+z$. Clearly, this implies that \alpha=\beta+\gamma. However, if the data were to only contain nonmissing values for $\alpha$, $\beta$ and $\gamma$, a naïve treatment of missing values would lead us to dismiss all the constraints as irrelevant to our data. The command is designed to be aware of the fact that the system of identities implicitly imposes $\alpha=\beta+\gamma$.
+Second, it pays specific attention to the way constraints are defined to overcome missing value problems. Indeed, assume for example that we have the constraints $a=b+c$, $\alpha=a+x$, $\beta=b+y$, $\gamma=c+z$, and $x=y+z$. Clearly, this implies that $\alpha=\beta+\gamma$. However, if the data were to only contain nonmissing values for $\alpha$, $\beta$ and $\gamma$, a naïve treatment of missing values would lead us to dismiss all the constraints as irrelevant to our data. The command is designed to be aware of the fact that the system of identities implicitly imposes $\alpha=\beta+\gamma$.
 
 Third, the command analyzes the system of identities to find any implausibility (e.g. variable always equal to zero) or incompatibility with the data (in case of fixed variables).
 

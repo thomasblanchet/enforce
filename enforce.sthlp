@@ -85,6 +85,9 @@ Default is 1e-7.
 {title:Details}
 
 {pstd}
+{it:Note: Stata does not allow good typesetting of math equation in help files. Visit {browse "https://github.com/thomasblanchet/enforce":the commands' GitHub page} for a better rendering of the text below.}
+
+{pstd}
 This Stata command is designed to enforce an arbitrary set of accounting identities intelligently, while performing a series of auxiliary checks and adjustments.
 To understand the command, first assume an identity a=b+c.
 The simplest, naïve way of enforcing it is to multiply both b and c by the same constant, a/(b+c).

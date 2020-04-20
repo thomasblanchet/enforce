@@ -127,7 +127,7 @@ The result can be written as the solution of a standard linear system (see {brow
 
 {pstd}
 This problem is solved via QR decomposition, so it will return an optimal solution in the least-squares sense if the system of identities is technically infeasible.
-The command checks wether this is the case, and stops by default is the system of equalities is found to be infeasible for some observations.
+The command checks wether this is the case, and stops by default if the system of equalities is found to be infeasible for some observations.
 You can override this behavior with the {bf:force} option.
 Note that variables initially equal to zero are implicitly fixed, so sometimes they can be the reason behind infeasibility.
 

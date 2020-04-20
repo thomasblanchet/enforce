@@ -4,7 +4,7 @@ A Stata package to enforce accounting identities between variables.
 
 ## Usage
 
-Install the command in Stata by typing `ssc install Stata`.
+Install the command in Stata by typing `ssc install enforce`.
 
 Then use it as:
 ```stata
@@ -62,7 +62,7 @@ B
 \end{bmatrix}
 $$
 
-where $\lambda$ is a set of Lagrange multipliers determined alongside $X$. (Variables that are set fixed or equal to zero are removed from the vector $X$ and included in $B$.) This problem is solved via QR decomposition, so it will return an optimal solution in the least-squares sense if the system of identities is technically infeasible. The command checks wether this is the case, and stops by default is the system of equalities is found to be infeasible for some observations. You can override this behavior with the force option. Note that variables initially equal to zero are implicitly fixed, so sometimes they can be the reason behind infeasibility.
+where $\lambda$ is a set of Lagrange multipliers determined alongside $X$. (Variables that are set fixed or equal to zero are removed from the vector $X$ and included in $B$.) This problem is solved via QR decomposition, so it will return an optimal solution in the least-squares sense if the system of identities is technically infeasible. The command checks wether this is the case, and stops by default if the system of equalities is found to be infeasible for some observations. You can override this behavior with the force option. Note that variables initially equal to zero are implicitly fixed, so sometimes they can be the reason behind infeasibility.
 
 This is the main task performed by the command enforce, although it also has several additional functionalities.
 

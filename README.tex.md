@@ -35,9 +35,11 @@ The command is designed to enforce an arbitrary set of accounting identities int
 One way to fix that first issue is to calculate the discrepancy $\varpepislon=a-b-c$, and redistribute it proportionally to the absolute value of $b$ and $c$. That is, we redefine $b$ as $b+\lambda \varepsilon$ and $c$ as $c+(1-\lambda)\varepsilon$, where $\lambda=|b|/(|b|+|c|)$. If $b$ and $c$ are both positive, this is equivalent to the naïve approach, but otherwise it behaves much more reasonably.
 
 But there are still other problems. First, if forces us to define a reference variable (in this case $a$) that will remain unchanged, which may or may not be desirable. Second, it is not clear how to generalize this adjustment to more complex settings. In practice, we must simultaneously satisfy dozens of accounting identities, with variables presents in several of them, so that adjustments must be performed across several dimensions. We formalize that problem as follows. Assume that we have a vector $X=(x_1,\dots,x_n)'$ of variables to be adjusted, and we seek an adjusted vector $Y=(y_1,\dots,y_n)'$ that must satisfy a set of accounting identities. We will minimize:
+
 $$
 \sum_{i=1}^n \frac{(y_i - x_i)^2}{|x_i|}
 $$
+
 subject to the accounting identities. The convex cost function $(y_i-x_i)^2$ at the numerator ensure that the differences between raw and adjusted variables are as low as possible, and that they are spread equitably across all the variables. The $|x_i|$ at the denominator ensures that adjustments are proportional to the initial value of the variable. In simple cases, this is equivalent to the procedure explained above.
 
 Assume that the set of accounting identities can be written as a linear system $AX=B$. The problem can be written in matrix form as:
@@ -55,7 +57,7 @@ A & 0
 \end{bmatrix} \begin{bmatrix}
 X \\ \lambda
 \end{bmatrix} = \begin{bmatrix}
--C
+-C \\
 B
 \end{bmatrix}
 $$

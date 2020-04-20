@@ -1,5 +1,5 @@
 {smcl}
-{* *! enforce v0.9000 Thomas Blanchet 07apr2020}{...}
+{* *! enforce v1.0 Thomas Blanchet 20apr2020}{...}
 {title:Title}
 
 {phang}

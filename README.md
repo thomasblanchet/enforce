@@ -4,7 +4,7 @@ A Stata package to enforce accounting identities between variables.
 
 ## Usage
 
-Install the command in Stata by typing `ssc install Stata`.
+Install the command in Stata by typing `ssc install enforce`.
 
 Then use it as:
 ```stata
@@ -48,7 +48,7 @@ where <img src="/tex/0186ed4f08cc44351611736c1dd36c26.svg?invert_in_darkmode&san
 
 <p align="center"><img src="/tex/2074293b6cf6b6f276445bf6b22cd792.svg?invert_in_darkmode&sanitize=true" align=middle width=163.7054826pt height=39.452455349999994pt/></p>
 
-where <img src="/tex/fd8be73b54f5436a5cd2e73ba9b6bfa9.svg?invert_in_darkmode&sanitize=true" align=middle width=9.58908224999999pt height=22.831056599999986pt/> is a set of Lagrange multipliers determined alongside <img src="/tex/cbfb1b2a33b28eab8a3e59464768e810.svg?invert_in_darkmode&sanitize=true" align=middle width=14.908688849999992pt height=22.465723500000017pt/>. (Variables that are set fixed or equal to zero are removed from the vector <img src="/tex/cbfb1b2a33b28eab8a3e59464768e810.svg?invert_in_darkmode&sanitize=true" align=middle width=14.908688849999992pt height=22.465723500000017pt/> and included in <img src="/tex/61e84f854bc6258d4108d08d4c4a0852.svg?invert_in_darkmode&sanitize=true" align=middle width=13.29340979999999pt height=22.465723500000017pt/>.) This problem is solved via QR decomposition, so it will return an optimal solution in the least-squares sense if the system of identities is technically infeasible. The command checks wether this is the case, and stops by default is the system of equalities is found to be infeasible for some observations. You can override this behavior with the force option. Note that variables initially equal to zero are implicitly fixed, so sometimes they can be the reason behind infeasibility.
+where <img src="/tex/fd8be73b54f5436a5cd2e73ba9b6bfa9.svg?invert_in_darkmode&sanitize=true" align=middle width=9.58908224999999pt height=22.831056599999986pt/> is a set of Lagrange multipliers determined alongside <img src="/tex/cbfb1b2a33b28eab8a3e59464768e810.svg?invert_in_darkmode&sanitize=true" align=middle width=14.908688849999992pt height=22.465723500000017pt/>. (Variables that are set fixed or equal to zero are removed from the vector <img src="/tex/cbfb1b2a33b28eab8a3e59464768e810.svg?invert_in_darkmode&sanitize=true" align=middle width=14.908688849999992pt height=22.465723500000017pt/> and included in <img src="/tex/61e84f854bc6258d4108d08d4c4a0852.svg?invert_in_darkmode&sanitize=true" align=middle width=13.29340979999999pt height=22.465723500000017pt/>.) This problem is solved via QR decomposition, so it will return an optimal solution in the least-squares sense if the system of identities is technically infeasible. The command checks wether this is the case, and stops by default if the system of equalities is found to be infeasible for some observations. You can override this behavior with the force option. Note that variables initially equal to zero are implicitly fixed, so sometimes they can be the reason behind infeasibility.
 
 This is the main task performed by the command enforce, although it also has several additional functionalities.
 
